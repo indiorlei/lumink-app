@@ -4,7 +4,7 @@ import SwiftUI
 /// Modos de linha de comando para teste/depuração (o app normal ignora isto).
 ///
 ///   Lumink --process livro.pdf [outro.pdf] [--image-mode] [--vision] [--send] [--limit-mb N] [--cancel-after s]
-///           [--smtp host:porta --from a@b --to c@kindle.com --password x]
+///           [--via app|email] [--smtp host:porta --from a@b --to c@kindle.com --password x]
 ///   Lumink --keychain-test   grava, lê e apaga uma senha de teste no Keychain [--level high|medium|maximum]
 ///       Roda o pipeline no terminal e imprime o progresso. Sem --send, só gera o EPUB.
 ///   Lumink --compress entrada.epub saida.epub high|medium|maximum
@@ -64,7 +64,13 @@ enum DebugCommands {
             func value(_ flag: String) -> String? {
                 args.firstIndex(of: flag).flatMap { $0 + 1 < args.count ? args[$0 + 1] : nil }
             }
+            if let via = value("--via") {   // app | email
+                config.useSendToKindleApp = via == "app"
+                config.useEmail = via == "email"
+            }
             if let hp = value("--smtp") {
+                config.useSendToKindleApp = false
+                config.useEmail = true
                 let parts = hp.split(separator: ":")
                 config.smtp.host = String(parts[0])
                 if parts.count > 1, let p = Int(parts[1]) { config.smtp.port = p }
