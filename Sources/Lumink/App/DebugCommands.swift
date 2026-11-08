@@ -138,18 +138,25 @@ enum DebugCommands {
 
     private static func snapshot(to url: URL) {
         let queue = QueueViewModel()
+        // Os textos vêm das mesmas funções do pipeline, no idioma do app:
+        // `Lumink --snapshot x.png -AppleLanguages "(en)"` gera a prévia em inglês.
+        let pt = AppLanguage.isPortuguese
+        let english = BookLanguage.name("en"), portuguese = BookLanguage.name("pt")
         let samples: [(String, Int64, JobStatus, PipelineStage, Double?, Int64?, String)] = [
-            ("Dom Casmurro.pdf", 2_300_000, .pendingReview, .waiting, 0, nil, ""),
-            ("Sapiens - escaneado.pdf", 184_000_000, .running, .ocr, nil, nil, "PDF escaneado · 412 páginas"),
-            ("Manual Técnico.pdf", 36_500_000, .running, .converting, 0.42, nil, "PDF com texto · 220 páginas"),
-            ("Mangá vol 1.pdf", 212_000_000, .succeeded("Aberto no Send to Kindle: confirme o envio na janela do app"),
-             .finished, 1, 31_400_000, "Modo imagem · Média"),
-            ("O Alienista.pdf", 8_700_000, .succeeded("Enviado para nome@kindle.com"),
-             .finished, 1, 1_200_000, "PDF com texto · 96 páginas · Média"),
+            (pt ? "Dom Casmurro.pdf" : "Pride and Prejudice.pdf", 2_300_000, .pendingReview, .waiting, 0, nil, ""),
+            (pt ? "Sapiens - escaneado.pdf" : "Sapiens - scanned.pdf", 184_000_000, .running, .ocr, nil, nil,
+             "\(PDFKind.scanned.label) · \(Format.pages(412))"),
+            (pt ? "Manual Técnico.pdf" : "Technical Manual.pdf", 36_500_000, .running, .converting, 0.42, nil,
+             "\(PDFKind.text.label) · \(Format.pages(220)) · \(pt ? portuguese : english)"),
+            (pt ? "Mangá vol 1.pdf" : "Manga vol 1.pdf", 212_000_000, .succeeded(PipelineMessage.openedInSendToKindle),
+             .finished, 1, 31_400_000, loc("Modo imagem", "Image mode") + " · \(CompressionLevel.medium.label)"),
+            (pt ? "O Alienista.pdf" : "Moby Dick.pdf", 8_700_000, .succeeded(PipelineMessage.sent(to: "name@kindle.com")),
+             .finished, 1, 1_200_000,
+             "\(PDFKind.text.label) · \(Format.pages(96)) · \(pt ? portuguese : english) · \(CompressionLevel.medium.label)"),
         ]
         for (name, size, status, stage, progress, final, detail) in samples {
             let job = BookJob(sourceURL: URL(fileURLWithPath: "/tmp/\(name)"),
-                              title: (name as NSString).deletingPathExtension, author: "Autor Exemplo",
+                              title: (name as NSString).deletingPathExtension, author: loc("Autor Exemplo", "Sample Author"),
                               imageMode: false, originalSize: size)
             job.status = status
             job.stage = stage

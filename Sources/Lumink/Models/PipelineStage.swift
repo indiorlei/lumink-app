@@ -5,13 +5,13 @@ enum PipelineStage: Int, CaseIterable, Sendable {
 
     var label: String {
         switch self {
-        case .waiting: "Aguardando"
-        case .analyzing: "Analisando"
+        case .waiting: loc("Aguardando", "Waiting")
+        case .analyzing: loc("Analisando", "Analyzing")
         case .ocr: "OCR"
-        case .converting: "Convertendo"
-        case .compressing: "Comprimindo"
-        case .sending: "Enviando"
-        case .finished: "Concluído"
+        case .converting: loc("Convertendo", "Converting")
+        case .compressing: loc("Comprimindo", "Compressing")
+        case .sending: loc("Enviando", "Sending")
+        case .finished: loc("Concluído", "Done")
         }
     }
 

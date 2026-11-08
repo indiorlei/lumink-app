@@ -9,10 +9,10 @@ struct DropZoneView: View {
             if compact {
                 HStack {
                     Image(systemName: "arrow.down.doc")
-                    Text("Arraste mais PDFs para esta janela")
+                    Text(loc("Arraste mais PDFs para esta janela", "Drag more PDFs into this window"))
                         .foregroundStyle(.secondary)
                     Spacer()
-                    Button("Escolher PDF…", action: choose)
+                    Button(loc("Escolher PDF…", "Choose PDF…"), action: choose)
                 }
                 .padding(12)
             } else {
@@ -20,12 +20,12 @@ struct DropZoneView: View {
                     Image(systemName: "arrow.down.doc")
                         .font(.system(size: 44, weight: .light))
                         .foregroundStyle(.secondary)
-                    Text("Arraste seus PDFs aqui")
+                    Text(loc("Arraste seus PDFs aqui", "Drag your PDFs here"))
                         .font(.title3)
-                    Text("Vários arquivos de uma vez são processados em fila.")
+                    Text(loc("Vários arquivos de uma vez são processados em fila.", "Several files at once are processed in a queue."))
                         .font(.callout)
                         .foregroundStyle(.secondary)
-                    Button("Escolher PDF…", action: choose)
+                    Button(loc("Escolher PDF…", "Choose PDF…"), action: choose)
                         .controlSize(.large)
                         .keyboardShortcut("o")
                 }

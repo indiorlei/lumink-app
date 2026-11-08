@@ -36,36 +36,36 @@ struct MainView: View {
     @ToolbarContentBuilder
     private var toolbar: some ToolbarContent {
         ToolbarItemGroup(placement: .primaryAction) {
-            Picker("Qualidade", selection: $compression) {
+            Picker(loc("Qualidade", "Quality"), selection: $compression) {
                 ForEach(CompressionLevel.allCases) { level in
                     Text(level.label).tag(level.rawValue)
                 }
             }
-            .help("Qualidade das imagens no EPUB")
+            .help(loc("Qualidade das imagens no EPUB", "Image quality in the EPUB"))
 
             Toggle(isOn: $imageModeDefault) {
-                Label("Modo imagem", systemImage: "photo.on.rectangle")
+                Label(loc("Modo imagem", "Image mode"), systemImage: "photo.on.rectangle")
             }
-            .help("Modo imagem (HQ/mangá) para os próximos PDFs: uma imagem por página, sem OCR")
+            .help(loc("Modo imagem (HQ/mangá) para os próximos PDFs: uma imagem por página, sem OCR", "Image mode (comics/manga) for the next PDFs: one image per page, no OCR"))
 
             Toggle(isOn: $onlyGenerate) {
-                Label("Só gerar", systemImage: "tray.and.arrow.down")
+                Label(loc("Só gerar", "Only generate"), systemImage: "tray.and.arrow.down")
             }
-            .help("Só gerar o EPUB, sem enviar")
+            .help(loc("Só gerar o EPUB, sem enviar", "Only generate the EPUB, without sending it"))
 
             if queue.hasPendingReview {
-                Button("Processar todos") { queue.startAll() }
+                Button(loc("Processar todos", "Process all")) { queue.startAll() }
             }
             if queue.hasFinished {
                 Button {
                     queue.clearFinished()
                 } label: {
-                    Label("Limpar concluídos", systemImage: "trash")
+                    Label(loc("Limpar concluídos", "Clear finished"), systemImage: "trash")
                 }
-                .help("Remover os itens concluídos da lista")
+                .help(loc("Remover os itens concluídos da lista", "Remove finished items from the list"))
             }
             SettingsLink {
-                Label("Configurações", systemImage: "gearshape")
+                Label(loc("Configurações", "Settings"), systemImage: "gearshape")
             }
         }
     }

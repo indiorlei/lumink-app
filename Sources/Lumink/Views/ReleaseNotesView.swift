@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Janela "Novidades do Lumink".
+/// Janela loc("Novidades do Lumink", "What's New in Lumink").
 struct ReleaseNotesView: View {
     var notes: [ReleaseNote] = ReleaseNotes.all
     @Environment(\.dismiss) private var dismiss
@@ -21,7 +21,7 @@ struct ReleaseNotesView: View {
             Divider()
             HStack {
                 Spacer()
-                Button("Continuar") { dismiss() }
+                Button(loc("Continuar", "Continue")) { dismiss() }
                     .keyboardShortcut(.defaultAction)
             }
             .padding(16)
@@ -30,9 +30,9 @@ struct ReleaseNotesView: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Novidades do Lumink")
+            Text(loc("Novidades do Lumink", "What's New in Lumink"))
                 .font(.system(size: 26, weight: .semibold, design: .serif))
-            Text("A luz que leva o seu livro até a tinta.")
+            Text(loc("A luz que leva o seu livro até a tinta.", "The light that carries your book to the ink."))
                 .font(.callout).foregroundStyle(.secondary)
         }
     }
@@ -45,7 +45,7 @@ private struct ReleaseBlock: View {
         VStack(alignment: .leading, spacing: 14) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text("Versão \(note.version)")
+                    Text(loc("Versão \(note.version)", "Version \(note.version)"))
                         .font(.caption.monospaced().weight(.medium))
                         .padding(.horizontal, 6).padding(.vertical, 2)
                         .background(.tint.opacity(0.15), in: .rect(cornerRadius: 4))
@@ -87,13 +87,13 @@ enum ReleaseNotesWindow {
     static let id = "release-notes"
 }
 
-/// Item "Novidades do Lumink…" no menu do app.
+/// Item loc("Novidades do Lumink…", "What's New in Lumink…") no menu do app.
 struct ReleaseNotesCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
         CommandGroup(after: .appInfo) {
-            Button("Novidades do Lumink…") { openWindow(id: ReleaseNotesWindow.id) }
+            Button(loc("Novidades do Lumink…", "What's New in Lumink…")) { openWindow(id: ReleaseNotesWindow.id) }
         }
     }
 }

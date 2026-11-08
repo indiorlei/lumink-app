@@ -10,12 +10,12 @@ struct DependencyBanner: View {
                 if !deps.calibreOK {
                     Label {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("Calibre não encontrado").bold()
-                            Text("Necessário para converter PDFs com texto. O modo imagem funciona sem ele.")
+                            Text(loc("Calibre não encontrado", "Calibre not found")).bold()
+                            Text(loc("Necessário para converter PDFs com texto. O modo imagem funciona sem ele.", "Needed to convert PDFs with text. Image mode works without it."))
                                 .font(.caption)
                             HStack {
-                                Link("Baixar o Calibre", destination: DependencyChecker.calibreDownloadURL)
-                                Text("ou").foregroundStyle(.secondary)
+                                Link(loc("Baixar o Calibre", "Download Calibre"), destination: DependencyChecker.calibreDownloadURL)
+                                Text(loc("ou", "or")).foregroundStyle(.secondary)
                                 CopyableCommand("brew install --cask calibre")
                             }
                             .font(.caption)
@@ -27,8 +27,8 @@ struct DependencyBanner: View {
                 if !deps.ocrmypdfOK {
                     Label {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text("ocrmypdf não encontrado").bold()
-                            Text("PDFs escaneados usarão o OCR do macOS (Vision), que é mais lento e menos preciso. Para instalar:")
+                            Text(loc("ocrmypdf não encontrado", "ocrmypdf not found")).bold()
+                            Text(loc("PDFs escaneados usarão o OCR do macOS (Vision), que é mais lento e menos preciso. Para instalar:", "Scanned PDFs will use the macOS OCR (Vision), which is slower and less accurate. To install it:"))
                                 .font(.caption)
                             CopyableCommand("brew install ocrmypdf tesseract-lang")
                                 .font(.caption)
@@ -39,7 +39,7 @@ struct DependencyBanner: View {
                 }
                 HStack {
                     Spacer()
-                    Button("Verificar novamente") { queue.refreshDependencies() }
+                    Button(loc("Verificar novamente", "Check again")) { queue.refreshDependencies() }
                         .controlSize(.small)
                 }
             }
@@ -66,7 +66,7 @@ private struct CopyableCommand: View {
                 Image(systemName: "doc.on.doc")
             }
             .buttonStyle(.borderless)
-            .help("Copiar comando")
+            .help(loc("Copiar comando", "Copy command"))
         }
     }
 }

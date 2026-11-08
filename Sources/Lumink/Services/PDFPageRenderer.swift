@@ -6,7 +6,7 @@ enum PDFPageRenderer {
     enum RenderError: LocalizedError {
         case failed(Int)
         var errorDescription: String? {
-            if case .failed(let p) = self { return "Falha ao renderizar a página \(p + 1)." }
+            if case .failed(let p) = self { return loc("Falha ao renderizar a página \(p + 1).", "Failed to render page \(p + 1).") }
             return nil
         }
     }

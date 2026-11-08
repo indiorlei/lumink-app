@@ -9,7 +9,7 @@ enum KeychainStore {
         case status(OSStatus)
         var errorDescription: String? {
             if case .status(let s) = self {
-                let msg = SecCopyErrorMessageString(s, nil) as String? ?? "erro \(s)"
+                let msg = SecCopyErrorMessageString(s, nil) as String? ?? loc("erro \(s)", "error \(s)")
                 return "Keychain: \(msg)"
             }
             return nil
@@ -50,7 +50,7 @@ enum KeychainStore {
         if update == errSecItemNotFound {
             var add = base
             add[kSecValueData as String] = data
-            add[kSecAttrLabel as String] = "Lumink – senha SMTP"
+            add[kSecAttrLabel as String] = loc("Lumink – senha SMTP", "Lumink – SMTP password")
             let status = SecItemAdd(add as CFDictionary, nil)
             guard status == errSecSuccess else { throw KeychainError.status(status) }
         } else if update != errSecSuccess {

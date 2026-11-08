@@ -23,7 +23,7 @@ struct LuminkApp: App {
         .windowResizability(.contentMinSize)
         .commands { ReleaseNotesCommands() }
 
-        Window("Novidades do Lumink", id: ReleaseNotesWindow.id) {
+        Window(loc("Novidades do Lumink", "What's New in Lumink"), id: ReleaseNotesWindow.id) {
             ReleaseNotesView()
                 .frame(width: 520, height: 600)
         }

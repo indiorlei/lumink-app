@@ -15,7 +15,8 @@ struct MailSender: Sendable {
         var errorDescription: String? {
             switch self {
             case .notConfigured(let what):
-                "E-mail não configurado: \(what). Abra Configurações (⌘,) → Envio."
+                loc("E-mail não configurado: \(what). Abra Configurações (⌘,) → Envio.",
+                    "Email isn't set up: \(what). Open Settings (⌘,) → Delivery.")
             case .curl(let code, let detail):
                 "\(Self.explain(code)) (curl \(code))\n\(detail.suffix(400))"
             }
@@ -23,24 +24,30 @@ struct MailSender: Sendable {
 
         static func explain(_ code: Int32) -> String {
             switch code {
-            case 6: "Servidor SMTP não encontrado. Confira o endereço."
-            case 7: "Não foi possível conectar ao servidor SMTP. Confira servidor, porta e a internet."
-            case 28: "Tempo esgotado ao falar com o servidor SMTP."
-            case 35, 60: "Falha na conexão segura (TLS) com o servidor."
-            case 55: "O servidor recusou a mensagem (talvez seja grande demais)."
-            case 67: "Login recusado. No Gmail, use uma senha de app (não a senha normal da conta)."
-            default: "Falha ao enviar o e-mail."
+            case 6: loc("Servidor SMTP não encontrado. Confira o endereço.",
+                        "SMTP server not found. Check the address.")
+            case 7: loc("Não foi possível conectar ao servidor SMTP. Confira servidor, porta e a internet.",
+                        "Couldn't connect to the SMTP server. Check the server, the port and your internet connection.")
+            case 28: loc("Tempo esgotado ao falar com o servidor SMTP.",
+                         "Timed out talking to the SMTP server.")
+            case 35, 60: loc("Falha na conexão segura (TLS) com o servidor.",
+                             "The secure connection (TLS) to the server failed.")
+            case 55: loc("O servidor recusou a mensagem (talvez seja grande demais).",
+                         "The server rejected the message (it may be too large).")
+            case 67: loc("Login recusado. No Gmail, use uma senha de app (não a senha normal da conta).",
+                         "Login rejected. With Gmail, use an app password (not your regular account password).")
+            default: loc("Falha ao enviar o e-mail.", "Failed to send the email.")
             }
         }
     }
 
     /// Lê a senha do Keychain e valida a configuração.
     static func configured(_ smtp: SMTPConfig, passwordOverride: String? = nil) throws -> MailSender {
-        if smtp.kindle.isEmpty { throw MailError.notConfigured("falta o e-mail do Kindle") }
-        if smtp.sender.isEmpty { throw MailError.notConfigured("falta o e-mail remetente") }
-        if smtp.host.isEmpty { throw MailError.notConfigured("falta o servidor SMTP") }
+        if smtp.kindle.isEmpty { throw MailError.notConfigured(loc("falta o e-mail do Kindle", "the Kindle email is missing")) }
+        if smtp.sender.isEmpty { throw MailError.notConfigured(loc("falta o e-mail remetente", "the sender email is missing")) }
+        if smtp.host.isEmpty { throw MailError.notConfigured(loc("falta o servidor SMTP", "the SMTP server is missing")) }
         guard let password = passwordOverride ?? KeychainStore.password(for: smtp.sender), !password.isEmpty else {
-            throw MailError.notConfigured("falta a senha de app (salve no Keychain)")
+            throw MailError.notConfigured(loc("falta a senha de app (salve no Keychain)", "the app password is missing (save it to the Keychain)"))
         }
         return MailSender(smtp: smtp, password: password)
     }

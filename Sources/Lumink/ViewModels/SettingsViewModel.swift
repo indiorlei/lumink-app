@@ -41,8 +41,9 @@ final class SettingsViewModel {
                 smtp.kindle = smtp.sender
                 let sender = try MailSender.configured(smtp)
                 let message = MailComposer.build(
-                    from: smtp.sender, to: smtp.sender, subject: "Lumink: e-mail de teste",
-                    body: "Se você recebeu esta mensagem, o envio SMTP do Lumink está funcionando.\n\nLembre de adicionar \(smtp.sender) à lista de e-mails aprovados do Send to Kindle na Amazon."
+                    from: smtp.sender, to: smtp.sender, subject: loc("Lumink: e-mail de teste", "Lumink: test email"),
+                    body: loc("Se você recebeu esta mensagem, o envio SMTP do Lumink está funcionando.\n\nLembre de adicionar \(smtp.sender) à lista de e-mails aprovados do Send to Kindle na Amazon.",
+                              "If you got this message, Lumink's SMTP delivery is working.\n\nRemember to add \(smtp.sender) to the approved Send to Kindle email list on Amazon.")
                 )
                 let ws = try TempWorkspace()
                 defer { ws.cleanup() }

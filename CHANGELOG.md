@@ -15,6 +15,10 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
   Os Ajustes mostram se o app está instalado e onde baixar.
 - Liga/desliga separado para o app e para o e-mail (SMTP). Com os dois
   ligados, o app tem prioridade e o e-mail entra quando o app não está instalado.
+- **Interface em inglês.** O app segue o idioma do macOS: português para quem
+  usa o sistema em português, inglês para os outros idiomas. Dá para escolher
+  só para o Lumink em Ajustes do Sistema → Geral → Idioma e Região →
+  Aplicativos.
 - **Idioma do livro.** O app detecta o idioma pelo texto do PDF (ou pelo texto
   do OCR, nos escaneados) e grava no EPUB. O Kindle usa esse idioma para o
   dicionário, a hifenização e a leitura em voz alta. Na revisão de título e
@@ -31,6 +35,7 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 - Quem já tinha um remetente configurado continua com o e-mail ligado.
 - Os detalhes de cada livro na fila mostram o idioma detectado (ex.:
   "PDF com texto · 220 páginas · inglês").
+- A prévia do `--snapshot` usa os textos do pipeline e sai no idioma do app.
 
 ### Corrigido
 

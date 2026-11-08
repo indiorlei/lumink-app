@@ -18,13 +18,13 @@ struct JobRowView: View {
             case .failed(let message):
                 resultLine(ok: false, message: message)
             case .cancelled:
-                resultLine(ok: false, message: "Cancelado.")
+                resultLine(ok: false, message: loc("Cancelado.", "Cancelled."))
             }
         }
         .padding(.vertical, 6)
         .contextMenu {
-            Button("Mostrar no Finder") { queue.showInFinder(job) }
-            Button("Remover da lista") { queue.remove(job) }
+            Button(loc("Mostrar no Finder", "Show in Finder")) { queue.showInFinder(job) }
+            Button(loc("Remover da lista", "Remove from list")) { queue.remove(job) }
         }
     }
 
@@ -60,15 +60,15 @@ struct JobRowView: View {
     private var trailingButtons: some View {
         switch job.status {
         case .queued, .running:
-            Button("Cancelar") { queue.cancel(job) }
+            Button(loc("Cancelar", "Cancel")) { queue.cancel(job) }
                 .controlSize(.small)
         case .succeeded, .failed, .cancelled:
             HStack {
                 if job.status != .cancelled, job.outputURL != nil {
-                    Button("Mostrar no Finder") { queue.showInFinder(job) }
+                    Button(loc("Mostrar no Finder", "Show in Finder")) { queue.showInFinder(job) }
                 }
                 if case .succeeded = job.status {} else {
-                    Button("Tentar de novo") { queue.retry(job) }
+                    Button(loc("Tentar de novo", "Try again")) { queue.retry(job) }
                 }
             }
             .controlSize(.small)
@@ -80,14 +80,14 @@ struct JobRowView: View {
             }
             .buttonStyle(.borderless)
             .foregroundStyle(.secondary)
-            .help("Remover da fila")
+            .help(loc("Remover da fila", "Remove from queue"))
         }
     }
 
     @ViewBuilder
     private var progressBar: some View {
         if job.status == .queued {
-            Text("Na fila…").font(.caption).foregroundStyle(.secondary)
+            Text(loc("Na fila…", "Queued…")).font(.caption).foregroundStyle(.secondary)
         } else if let p = job.progress {
             ProgressView(value: p)
         } else {
@@ -137,6 +137,6 @@ enum Format {
     }
 
     static func pages(_ n: Int) -> String {
-        n == 1 ? "1 página" : "\(n) páginas"
+        n == 1 ? loc("1 página", "1 page") : loc("\(n) páginas", "\(n) pages")
     }
 }

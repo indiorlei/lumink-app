@@ -22,18 +22,16 @@ enum BookLanguage {
         return Locale.Language(identifier: language.rawValue).languageCode?.identifier ?? language.rawValue
     }
 
-    /// Quando não há texto para detectar (HQ, mangá): português, o idioma do app.
-    static let fallback = "pt"
+    /// Quando não há texto para detectar (HQ, mangá): o idioma da interface.
+    static var fallback: String { AppLanguage.code }
 
-    private static let locale = Locale(identifier: "pt_BR")
-
-    /// Nome do idioma em português: "inglês".
+    /// Nome do idioma na língua do app: "inglês" / "English".
     static func name(_ code: String) -> String {
-        locale.localizedString(forLanguageCode: code) ?? code
+        AppLanguage.locale.localizedString(forLanguageCode: code) ?? code
     }
 
-    /// Nome para menus, com inicial maiúscula: "Inglês".
+    /// Nome para menus, com inicial maiúscula: "Inglês" / "English".
     static func menuName(_ code: String) -> String {
-        name(code).capitalized(with: locale)
+        name(code).capitalized(with: AppLanguage.locale)
     }
 }

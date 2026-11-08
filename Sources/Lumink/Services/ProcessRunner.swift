@@ -13,9 +13,9 @@ enum ProcessError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .notFound(let path):
-            "Executável não encontrado: \(path)"
+            loc("Executável não encontrado: \(path)", "Executable not found: \(path)")
         case .failed(let tool, let code, let tail):
-            "\(tool) falhou (código \(code)).\n\(tail.suffix(600))"
+            loc("\(tool) falhou (código \(code)).", "\(tool) failed (code \(code)).") + "\n\(tail.suffix(600))"
         }
     }
 }

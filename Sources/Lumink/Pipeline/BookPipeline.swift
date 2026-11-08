@@ -44,17 +44,17 @@ struct BookPipeline: Sendable {
                 Log.ocr.info("Pouco texto reconhecido; mudando para o modo imagem")
                 meta.imageMode = true
                 await MainActor.run { job.imageMode = true }
-                baseDetail += " · pouco texto → Modo imagem"
+                baseDetail += loc(" · pouco texto → Modo imagem", " · little text → Image mode")
                 await reporter.detail(baseDetail)
             }
             try Task.checkCancellation()
         } else if meta.imageMode {
-            baseDetail += " · Modo imagem"
+            baseDetail += loc(" · Modo imagem", " · Image mode")
             await reporter.detail(baseDetail)
         }
 
         // 3. Conversão
-        // Sem texto para detectar (HQ, mangá), vale o padrão.
+        // Sem texto para detectar (HQ, mangá), vale o idioma da interface.
         let bookLanguage = language ?? BookLanguage.fallback
         await reporter.stage(.converting)
         let epub = workspace.file("convertido.epub")
@@ -127,7 +127,7 @@ struct BookPipeline: Sendable {
         case .email(let sender):
             let message = MailComposer.build(
                 from: config.smtp.sender, to: config.smtp.kindle, subject: meta.title,
-                body: "Enviado pelo Lumink: "
+                body: loc("Enviado pelo Lumink: ", "Sent by Lumink: ")
                     + meta.title + (meta.author.isEmpty ? "" : " — \(meta.author)"),
                 attachment: .init(filename: OutputLocation.sanitize(meta.title) + ".epub", mimeType: "application/epub+zip",
                                   data: try Data(contentsOf: output))
@@ -162,19 +162,20 @@ struct BookPipeline: Sendable {
 /// Mensagens de sucesso, também usadas pela prévia do `--snapshot`.
 enum PipelineMessage {
     static func saved(_ fileName: String) -> String {
-        "EPUB salvo em \(fileName)"
+        loc("EPUB salvo em \(fileName)", "EPUB saved as \(fileName)")
     }
 
     static var openedInSendToKindle: String {
-        "Aberto no Send to Kindle: confirme o envio na janela do app"
+        loc("Aberto no Send to Kindle: confirme o envio na janela do app",
+            "Opened in Send to Kindle: confirm the delivery in the app's window")
     }
 
     static func sent(to email: String) -> String {
-        "Enviado para \(email)"
+        loc("Enviado para \(email)", "Sent to \(email)")
     }
 
     static func compressionRaised(to level: CompressionLevel) -> String {
-        " (compressão aumentada para \(level.label))"
+        loc(" (compressão aumentada para \(level.label))", " (compression raised to \(level.label))")
     }
 }
 
@@ -187,13 +188,17 @@ enum PipelineError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .calibreMissing:
-            "Calibre não encontrado. Instale em calibre-ebook.com (ou `brew install --cask calibre`) e confira o caminho em Configurações → Conversão. PDFs de HQ/mangá funcionam sem ele no Modo imagem."
+            loc("Calibre não encontrado. Instale em calibre-ebook.com (ou `brew install --cask calibre`) e confira o caminho em Configurações → Conversão. PDFs de HQ/mangá funcionam sem ele no Modo imagem.",
+                "Calibre not found. Install it from calibre-ebook.com (or `brew install --cask calibre`) and check the path in Settings → Conversion. Comic and manga PDFs work without it in Image mode.")
         case .tooLarge(let size, let limit):
-            "O EPUB ficou com \(Format.bytes(size)) mesmo na compressão máxima (limite: \(Format.bytes(limit))). Ele foi salvo, mas não foi enviado."
+            loc("O EPUB ficou com \(Format.bytes(size)) mesmo na compressão máxima (limite: \(Format.bytes(limit))). Ele foi salvo, mas não foi enviado.",
+                "The EPUB is \(Format.bytes(size)) even at maximum compression (limit: \(Format.bytes(limit))). It was saved, but not sent.")
         case .sendToKindleMissing:
-            "App Send to Kindle não encontrado. O EPUB foi salvo; baixe o app em \(SendToKindleApp.downloadURL.absoluteString) ou ligue o envio por e-mail em Configurações (⌘,)."
+            loc("App Send to Kindle não encontrado. O EPUB foi salvo; baixe o app em \(SendToKindleApp.downloadURL.absoluteString) ou ligue o envio por e-mail em Configurações (⌘,).",
+                "Send to Kindle app not found. The EPUB was saved; download the app at \(SendToKindleApp.downloadURL.absoluteString) or turn on email delivery in Settings (⌘,).")
         case .noDelivery:
-            "Nenhuma forma de envio ligada. O EPUB foi salvo; ligue o app Send to Kindle ou o e-mail em Configurações (⌘,)."
+            loc("Nenhuma forma de envio ligada. O EPUB foi salvo; ligue o app Send to Kindle ou o e-mail em Configurações (⌘,).",
+                "No delivery method is on. The EPUB was saved; turn on the Send to Kindle app or email in Settings (⌘,).")
         }
     }
 }

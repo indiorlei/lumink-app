@@ -45,7 +45,7 @@ struct CalibreConverter: Sendable {
             Log.convert.debug("\(line, privacy: .public)")
         }
         guard FileManager.default.fileExists(atPath: epub.path) else {
-            throw ProcessError.failed(tool: "ebook-convert", code: 0, tail: "Nenhum EPUB foi gerado.")
+            throw ProcessError.failed(tool: "ebook-convert", code: 0, tail: loc("Nenhum EPUB foi gerado.", "No EPUB was produced."))
         }
     }
 

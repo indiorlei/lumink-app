@@ -142,7 +142,7 @@ modo *accurate*, pt-BR + en-US). Se um PDF escaneado render quase nenhum texto
 **Idioma do livro.** O app detecta o idioma com o `NLLanguageRecognizer` do
 macOS, a partir do texto das páginas amostradas na análise. Nos PDFs
 escaneados, usa o texto do OCR. A detecção exige pelo menos 200 letras e 60%
-de confiança. Sem texto suficiente (HQ, mangá), vale o português.
+de confiança. Sem texto suficiente (HQ, mangá), vale o idioma da interface.
 Na revisão de título e autor, o menu *Idioma* tem prioridade sobre a detecção,
 e o idioma escolhido vai para a frente da lista do OCR. O idioma vai para o
 EPUB (`--language` do Calibre ou `dc:language` no Modo imagem): o Kindle o usa
@@ -192,6 +192,7 @@ $KP --process livro.pdf --language en   # idioma do livro escolhido (sem ele, de
 $KP --compress in.epub out.epub medium  # só a compressão
 $KP --keychain-test                     # grava/lê/apaga uma senha de teste
 $KP --snapshot janela.png               # renderiza a janela com itens de exemplo
+$KP -AppleLanguages "(en)" --snapshot janela-en.png   # a mesma prévia em inglês
 $KP --snapshot-notes novidades.png      # renderiza a janela de novidades
 ```
 
@@ -200,6 +201,19 @@ PDFs de teste (texto, escaneado e misto): `swift Scripts/make-test-pdfs.swift` �
 Ícone (uma chama, o lume, sobre um traço de tinta): `swift Scripts/make-icon.swift`.
 Gera `Resources/AppIcon.icns` e os ícones do site (`favicon.ico`, `icon.png`,
 `apple-icon.png`). Depois rode o `./build-app.sh`.
+
+## Idiomas da interface
+
+O app fala português e inglês e segue o idioma do macOS. Qualquer idioma além
+desses dois cai no inglês. Para escolher só para o Lumink: Ajustes do Sistema
+→ Geral → Idioma e Região → Aplicativos.
+
+Os textos ficam no código, lado a lado: `loc("Processar", "Process")`
+(`App/Localization.swift`). Não há arquivos `.strings`: assim nenhum texto novo
+nasce sem tradução, e o build com `swiftc` continua sem precisar do Xcode. O
+`Info.plist` declara os dois idiomas (`CFBundleLocalizations`), para o macOS
+traduzir também os menus do sistema. Os logs (`os.Logger`) continuam em
+português.
 
 ## Estrutura
 

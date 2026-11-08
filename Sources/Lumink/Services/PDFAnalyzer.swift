@@ -6,9 +6,9 @@ enum PDFKind: String, Sendable {
 
     var label: String {
         switch self {
-        case .text: "PDF com texto"
-        case .scanned: "PDF escaneado"
-        case .mixed: "PDF misto"
+        case .text: loc("PDF com texto", "PDF with text")
+        case .scanned: loc("PDF escaneado", "Scanned PDF")
+        case .mixed: loc("PDF misto", "Mixed PDF")
         }
     }
 }
@@ -33,9 +33,9 @@ enum PDFAnalyzerError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
-        case .unreadable: "Não foi possível abrir o PDF."
-        case .encrypted: "O PDF está protegido por senha."
-        case .empty: "O PDF não tem páginas."
+        case .unreadable: loc("Não foi possível abrir o PDF.", "Couldn't open the PDF.")
+        case .encrypted: loc("O PDF está protegido por senha.", "The PDF is password-protected.")
+        case .empty: loc("O PDF não tem páginas.", "The PDF has no pages.")
         }
     }
 }

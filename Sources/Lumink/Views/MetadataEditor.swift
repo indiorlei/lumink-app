@@ -8,20 +8,20 @@ struct MetadataEditor: View {
     var body: some View {
         Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 6) {
             GridRow {
-                Text("Título").foregroundStyle(.secondary)
-                TextField("Título", text: $job.title)
+                Text(loc("Título", "Title")).foregroundStyle(.secondary)
+                TextField(loc("Título", "Title"), text: $job.title)
                     .textFieldStyle(.roundedBorder)
             }
             GridRow {
-                Text("Autor").foregroundStyle(.secondary)
-                TextField("Autor", text: $job.author)
+                Text(loc("Autor", "Author")).foregroundStyle(.secondary)
+                TextField(loc("Autor", "Author"), text: $job.author)
                     .textFieldStyle(.roundedBorder)
             }
             GridRow {
-                Text("Idioma").foregroundStyle(.secondary)
+                Text(loc("Idioma", "Language")).foregroundStyle(.secondary)
                 HStack {
-                    Picker("Idioma", selection: $job.language) {
-                        Text("Detectar sozinho").tag(String?.none)
+                    Picker(loc("Idioma", "Language"), selection: $job.language) {
+                        Text(loc("Detectar sozinho", "Detect automatically")).tag(String?.none)
                         Divider()
                         ForEach(BookLanguage.choices, id: \.self) { code in
                             Text(BookLanguage.menuName(code)).tag(Optional(code))
@@ -29,11 +29,12 @@ struct MetadataEditor: View {
                     }
                     .labelsHidden()
                     .fixedSize()
-                    .help("Vai para o EPUB: o Kindle usa o idioma para escolher o dicionário e a hifenização")
-                    Toggle("Modo imagem (HQ/mangá)", isOn: $job.imageMode)
-                        .help("Pula o OCR e gera um EPUB de layout fixo com uma imagem por página")
+                    .help(loc("Vai para o EPUB: o Kindle usa o idioma para escolher o dicionário e a hifenização",
+                              "Goes into the EPUB: the Kindle uses the language to pick the dictionary and hyphenation"))
+                    Toggle(loc("Modo imagem (HQ/mangá)", "Image mode (comics/manga)"), isOn: $job.imageMode)
+                        .help(loc("Pula o OCR e gera um EPUB de layout fixo com uma imagem por página", "Skips OCR and builds a fixed-layout EPUB with one image per page"))
                     Spacer()
-                    Button("Processar", action: onStart)
+                    Button(loc("Processar", "Process"), action: onStart)
                         .buttonStyle(.borderedProminent)
                         .disabled(job.title.trimmingCharacters(in: .whitespaces).isEmpty)
                 }

@@ -34,9 +34,9 @@ struct OCRService: Sendable {
                 throw CancellationError()
             } catch {
                 Log.ocr.error("ocrmypdf falhou, usando Vision: \(error.localizedDescription, privacy: .public)")
-                await detail("ocrmypdf falhou → Vision")
+                await detail(loc("ocrmypdf falhou → Vision", "ocrmypdf failed → Vision"))
                 result = try await vision.recognize(pdf: pdf, pages: pages, workDir: workDir, progress: progress)
-                engineName = "Vision (ocrmypdf falhou)"
+                engineName = loc("Vision (ocrmypdf falhou)", "Vision (ocrmypdf failed)")
             }
         } else {
             await detail("Vision")

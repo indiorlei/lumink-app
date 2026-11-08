@@ -7,14 +7,15 @@ enum CompressionLevel: String, CaseIterable, Identifiable, Sendable {
 
     var label: String {
         switch self {
-        case .high: "Alta"
-        case .medium: "Média"
-        case .maximum: "Máxima compressão"
+        case .high: loc("Alta", "High")
+        case .medium: loc("Média", "Medium")
+        case .maximum: loc("Máxima compressão", "Maximum compression")
         }
     }
 
     var detail: String {
-        "até \(maxHeight) px, JPEG \(Int(jpegQuality * 100))%"
+        loc("até \(maxHeight) px, JPEG \(Int(jpegQuality * 100))%",
+            "up to \(maxHeight) px, JPEG \(Int(jpegQuality * 100))%")
     }
 
     /// Altura máxima das imagens, em pixels.
