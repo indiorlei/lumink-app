@@ -11,6 +11,8 @@ struct ImageModeConverter: Sendable {
     struct Options: Sendable {
         var title: String
         var author: String
+        /// ISO 639-1, ex.: "pt", "en".
+        var language: String
     }
 
     func convert(pdf: URL, to epub: URL, workDir: URL, options: Options,
@@ -30,7 +32,7 @@ struct ImageModeConverter: Sendable {
             let id = String(format: "p%04d", i + 1)
             let image = try autoreleasepool { try PDFPageRenderer.render(page, height: Self.renderHeight) }
             try ImageEncoder.writeJPEG(image, to: oebps.appendingPathComponent("images/\(id).jpg"), quality: Self.renderQuality)
-            try Self.pageXHTML(id: id, number: i + 1, width: image.width, height: image.height)
+            try Self.pageXHTML(id: id, number: i + 1, width: image.width, height: image.height, language: options.language)
                 .write(to: oebps.appendingPathComponent("pages/\(id).xhtml"), atomically: true, encoding: .utf8)
             pages.append((id, image.width, image.height))
             progress(Double(i + 1) / Double(doc.pageCount) * 0.95)
@@ -65,17 +67,19 @@ struct ImageModeConverter: Sendable {
     </container>
     """
 
-    static func pageXHTML(id: String, number: Int, width: Int, height: Int) -> String {
-        """
+    static func pageXHTML(id: String, number: Int, width: Int, height: Int, language: String) -> String {
+        // Texto dentro do livro: segue o idioma do livro, não o do app.
+        let label = "\(language == "pt" ? "Página" : "Page") \(number)"
+        return """
         <?xml version="1.0" encoding="UTF-8"?>
         <!DOCTYPE html>
         <html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops">
         <head>
-          <title>Página \(number)</title>
+          <title>\(label)</title>
           <meta name="viewport" content="width=\(width), height=\(height)"/>
           <style>html,body{margin:0;padding:0;width:\(width)px;height:\(height)px}img{width:\(width)px;height:\(height)px;display:block}</style>
         </head>
-        <body><img src="../images/\(id).jpg" alt="Página \(number)"/></body>
+        <body><img src="../images/\(id).jpg" alt="\(label)"/></body>
         </html>
         """
     }
@@ -98,7 +102,7 @@ struct ImageModeConverter: Sendable {
             <dc:identifier id="bookid">urn:uuid:\(UUID().uuidString.lowercased())</dc:identifier>
             <dc:title>\(xmlEscape(options.title))</dc:title>
             \(creator)
-            <dc:language>pt</dc:language>
+            <dc:language>\(xmlEscape(options.language))</dc:language>
             <meta property="dcterms:modified">\(modified.prefix(19))Z</meta>
             <meta property="rendition:layout">pre-paginated</meta>
             <meta property="rendition:orientation">auto</meta>

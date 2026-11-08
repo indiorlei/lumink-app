@@ -13,11 +13,14 @@ struct BookPipeline: Sendable {
         // 1. Análise
         await reporter.stage(.analyzing)
         let analysis = try PDFAnalyzer.analyze(source)
-        await reporter.detail("\(analysis.kind.label) · \(analysis.pageCount) páginas")
-        try Task.checkCancellation()
-
         var meta = await reporter.snapshot()
-        var baseDetail = "\(analysis.kind.label) · \(analysis.pageCount) páginas"
+        var baseDetail = "\(analysis.kind.label) · \(Format.pages(analysis.pageCount))"
+        // Idioma do livro: o escolhido na revisão, senão o detectado no texto do PDF.
+        // Em PDFs escaneados, sai do texto do OCR, mais abaixo.
+        var language = meta.language ?? analysis.language
+        if let language { baseDetail += " · \(BookLanguage.name(language))" }
+        await reporter.detail(baseDetail)
+        try Task.checkCancellation()
 
         // 2. OCR (escaneado ou misto, fora do modo imagem)
         var pdfForConversion = source
@@ -26,10 +29,15 @@ struct BookPipeline: Sendable {
             let ocrDetail = baseDetail
             let outcome = try await OCRService(config: config).run(
                 pdf: source, workDir: workspace.url,
+                languages: OCRLanguages.prioritizing(language, in: config.ocrLanguages),
                 detail: { await reporter.detail("\(ocrDetail) · OCR: \($0)") },
                 progress: { reporter.progress($0, in: .ocr) }
             )
             pdfForConversion = outcome.pdf
+            if language == nil, let detected = outcome.language {
+                language = detected
+                baseDetail += " · \(BookLanguage.name(detected))"
+            }
             await reporter.detail("\(baseDetail) · OCR: \(outcome.engine)")
             // Quase nada reconhecido (HQ, mangá, fotos): o reflow daria um livro vazio.
             if outcome.ocrPages > 0 && outcome.recognizedChars / outcome.ocrPages < 100 && analysis.kind == .scanned {
@@ -46,12 +54,14 @@ struct BookPipeline: Sendable {
         }
 
         // 3. Conversão
+        // Sem texto para detectar (HQ, mangá), vale o padrão.
+        let bookLanguage = language ?? BookLanguage.fallback
         await reporter.stage(.converting)
         let epub = workspace.file("convertido.epub")
         if meta.imageMode {
             try await ImageModeConverter().convert(
                 pdf: source, to: epub, workDir: workspace.url,
-                options: .init(title: meta.title, author: meta.author)
+                options: .init(title: meta.title, author: meta.author, language: bookLanguage)
             ) { reporter.progress($0, in: .converting) }
         } else {
             guard let calibre = DependencyChecker.findCalibre(configured: config.calibrePath) else {
@@ -59,7 +69,7 @@ struct BookPipeline: Sendable {
             }
             try await CalibreConverter(executable: calibre).convert(
                 pdf: pdfForConversion, to: epub,
-                options: .init(title: meta.title, author: meta.author)
+                options: .init(title: meta.title, author: meta.author, language: bookLanguage)
             ) { reporter.progress($0, in: .converting) }
         }
         try Task.checkCancellation()
@@ -101,30 +111,31 @@ struct BookPipeline: Sendable {
             job.outputURL = output
             job.finalSize = savedSize
         }
-        let levelNote = level == config.compression ? "" : " (compressão aumentada para \(level.label))"
+        let levelNote = level == config.compression ? "" : PipelineMessage.compressionRaised(to: level)
 
         if let limit, finalSize > limit {
             throw PipelineError.tooLarge(size: finalSize, limit: limit)
         }
         // 5. Envio
-        guard let delivery else { return "EPUB salvo em \(output.lastPathComponent)\(levelNote)" }
+        guard let delivery else { return PipelineMessage.saved(output.lastPathComponent) + levelNote }
         await reporter.stage(.sending)
         switch try delivery.get() {
         case .app(let app):
             try await SendToKindleApp.open(output, with: app)
             reporter.progress(1, in: .sending)
-            return "Aberto no Send to Kindle: confirme o envio na janela do app\(levelNote)"
+            return PipelineMessage.openedInSendToKindle + levelNote
         case .email(let sender):
             let message = MailComposer.build(
                 from: config.smtp.sender, to: config.smtp.kindle, subject: meta.title,
-                body: "Enviado pelo Lumink: \(meta.title)\(meta.author.isEmpty ? "" : " — \(meta.author)")",
+                body: "Enviado pelo Lumink: "
+                    + meta.title + (meta.author.isEmpty ? "" : " — \(meta.author)"),
                 attachment: .init(filename: OutputLocation.sanitize(meta.title) + ".epub", mimeType: "application/epub+zip",
                                   data: try Data(contentsOf: output))
             )
             let messageFile = workspace.file("mensagem.eml")
             try message.write(to: messageFile)
             try await sender.send(messageFile: messageFile) { reporter.progress($0, in: .sending) }
-            return "Enviado para \(config.smtp.kindle)\(levelNote)"
+            return PipelineMessage.sent(to: config.smtp.kindle) + levelNote
         }
     }
 
@@ -145,6 +156,25 @@ struct BookPipeline: Sendable {
     static func fileSize(_ url: URL) -> Int64 {
         let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
         return (attrs?[.size] as? NSNumber)?.int64Value ?? 0
+    }
+}
+
+/// Mensagens de sucesso, também usadas pela prévia do `--snapshot`.
+enum PipelineMessage {
+    static func saved(_ fileName: String) -> String {
+        "EPUB salvo em \(fileName)"
+    }
+
+    static var openedInSendToKindle: String {
+        "Aberto no Send to Kindle: confirme o envio na janela do app"
+    }
+
+    static func sent(to email: String) -> String {
+        "Enviado para \(email)"
+    }
+
+    static func compressionRaised(to level: CompressionLevel) -> String {
+        " (compressão aumentada para \(level.label))"
     }
 }
 

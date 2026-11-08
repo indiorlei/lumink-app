@@ -12,6 +12,8 @@ final class BookJob: Identifiable {
     var title: String
     var author: String
     var imageMode: Bool
+    /// Idioma do livro (ISO 639-1) escolhido na revisão. `nil` = detectar sozinho.
+    var language: String?
 
     var stage: PipelineStage = .waiting
     /// `nil` = progresso indeterminado.
@@ -68,7 +70,7 @@ struct JobReporter: Sendable {
         await MainActor.run { job.detail = text }
     }
 
-    func snapshot() async -> (title: String, author: String, imageMode: Bool) {
-        await MainActor.run { (job.title, job.author, job.imageMode) }
+    func snapshot() async -> (title: String, author: String, imageMode: Bool, language: String?) {
+        await MainActor.run { (job.title, job.author, job.imageMode, job.language) }
     }
 }

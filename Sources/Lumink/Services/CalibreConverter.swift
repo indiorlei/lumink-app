@@ -7,6 +7,8 @@ struct CalibreConverter: Sendable {
     struct Options: Sendable {
         var title: String
         var author: String
+        /// ISO 639-1, ex.: "pt", "en".
+        var language: String
     }
 
     func convert(pdf: URL, to epub: URL, options: Options,
@@ -31,7 +33,7 @@ struct CalibreConverter: Sendable {
             "--epub-version", "3",
             "--chapter-mark", "pagebreak",
             "--title", options.title,
-            "--language", "pt",
+            "--language", options.language,
         ]
         if !options.author.trimmingCharacters(in: .whitespaces).isEmpty {
             args += ["--authors", options.author]

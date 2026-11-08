@@ -10,19 +10,22 @@ struct OCRService: Sendable {
         var engine: String
         var recognizedChars: Int
         var ocrPages: Int
+        /// Idioma detectado no texto reconhecido (ISO 639-1).
+        var language: String?
     }
 
-    func run(pdf: URL, workDir: URL, detail: @escaping @Sendable (String) async -> Void,
+    /// `languages`: idiomas do Tesseract, já com o idioma do livro na frente (se conhecido).
+    func run(pdf: URL, workDir: URL, languages: String, detail: @escaping @Sendable (String) async -> Void,
              progress: @escaping @Sendable (Double?) -> Void) async throws -> Outcome {
         let pages = Self.pagesNeedingOCR(pdf)
-        guard !pages.isEmpty else { return Outcome(pdf: pdf, engine: "-", recognizedChars: 0, ocrPages: 0) }
+        guard !pages.isEmpty else { return Outcome(pdf: pdf, engine: "-", recognizedChars: 0, ocrPages: 0, language: nil) }
         Log.ocr.info("OCR em \(pages.count) páginas")
 
         var result: OCRResult
         var engineName: String
-        let vision = VisionOCREngine(languages: OCRLanguages.visionCodes(from: config.ocrLanguages))
+        let vision = VisionOCREngine(languages: OCRLanguages.visionCodes(from: languages))
         if !config.forceVisionOCR, let path = DependencyChecker.findOCRmyPDF(configured: config.ocrmypdfPath) {
-            let engine = OCRmyPDFEngine(executable: path, languages: config.ocrLanguages)
+            let engine = OCRmyPDFEngine(executable: path, languages: languages)
             await detail("ocrmypdf")
             do {
                 result = try await engine.recognize(pdf: pdf, pages: pages, workDir: workDir, progress: progress)
@@ -43,10 +46,13 @@ struct OCRService: Sendable {
         try Task.checkCancellation()
 
         let chars = result.values.reduce(0) { $0 + $1.reduce(0) { $0 + $1.text.count } }
+        let recognized = result.keys.sorted().prefix(60)
+            .flatMap { result[$0] ?? [] }.map(\.text).joined(separator: "\n")
         let output = workDir.appendingPathComponent("para-conversao.pdf")
         try TextLayerPDFBuilder.build(source: pdf, ocr: result, to: output)
         Log.ocr.info("OCR (\(engineName, privacy: .public)): \(chars) caracteres em \(pages.count) páginas")
-        return Outcome(pdf: output, engine: engineName, recognizedChars: chars, ocrPages: pages.count)
+        return Outcome(pdf: output, engine: engineName, recognizedChars: chars, ocrPages: pages.count,
+                       language: BookLanguage.detect(recognized))
     }
 
     /// Todas as páginas (não só a amostra) com pouco ou nenhum texto.

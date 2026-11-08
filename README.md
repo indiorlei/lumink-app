@@ -139,6 +139,15 @@ modo *accurate*, pt-BR + en-US). Se um PDF escaneado render quase nenhum texto
 > Consequência: figuras dentro de páginas *escaneadas* não vão para o EPUB.
 > Para livros muito ilustrados, use o Modo imagem.
 
+**Idioma do livro.** O app detecta o idioma com o `NLLanguageRecognizer` do
+macOS, a partir do texto das páginas amostradas na análise. Nos PDFs
+escaneados, usa o texto do OCR. A detecção exige pelo menos 200 letras e 60%
+de confiança. Sem texto suficiente (HQ, mangá), vale o português.
+Na revisão de título e autor, o menu *Idioma* tem prioridade sobre a detecção,
+e o idioma escolhido vai para a frente da lista do OCR. O idioma vai para o
+EPUB (`--language` do Calibre ou `dc:language` no Modo imagem): o Kindle o usa
+para o dicionário, a hifenização e a leitura em voz alta.
+
 **Conversão.** `ebook-convert` com o motor `calibre`, remoção automática de
 cabeçalhos e rodapés repetidos (`--pdf-header-skip -1 --pdf-footer-skip -1`),
 uma regex para números de página soltos, `--enable-heuristics` (junta linhas,
@@ -179,6 +188,7 @@ $KP --process livro.pdf                 # pipeline completo, só gera o EPUB
 $KP --process hq.pdf --image-mode --level maximum
 $KP --process livro.pdf --vision        # força o OCR do Vision
 $KP --process livro.pdf --send          # envia com as configurações do app
+$KP --process livro.pdf --language en   # idioma do livro escolhido (sem ele, detecta)
 $KP --compress in.epub out.epub medium  # só a compressão
 $KP --keychain-test                     # grava/lê/apaga uma senha de teste
 $KP --snapshot janela.png               # renderiza a janela com itens de exemplo

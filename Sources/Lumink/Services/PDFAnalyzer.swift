@@ -18,6 +18,9 @@ struct PDFAnalysis: Sendable {
     var pageCount: Int
     var sampledPages: Int
     var pagesWithText: Int
+    /// Idioma detectado no texto das páginas amostradas (ISO 639-1). `nil` em PDFs
+    /// escaneados: aí o idioma sai do texto do OCR.
+    var language: String?
 }
 
 struct PDFMetadata: Sendable {
@@ -71,17 +74,24 @@ enum PDFAnalyzer {
 
         let indices = sampleIndices(pageCount: count)
         var withText = 0
+        var sample = ""
         for i in indices {
             guard let page = doc.page(at: i) else { continue }
-            let chars = (page.string ?? "").filter { !$0.isWhitespace }.count
-            if chars >= minCharsPerPage { withText += 1 }
+            let text = page.string ?? ""
+            let chars = text.filter { !$0.isWhitespace }.count
+            if chars >= minCharsPerPage {
+                withText += 1
+                sample += text + "\n"
+            }
         }
         let ratio = Double(withText) / Double(indices.count)
         let kind: PDFKind =
             ratio >= 0.9 ? .text :
             ratio < 0.5 ? .scanned : .mixed
-        Log.analyze.info("\(url.lastPathComponent, privacy: .public): \(withText)/\(indices.count) páginas com texto → \(kind.rawValue, privacy: .public)")
-        return PDFAnalysis(kind: kind, pageCount: count, sampledPages: indices.count, pagesWithText: withText)
+        let language = kind == .scanned ? nil : BookLanguage.detect(sample)
+        Log.analyze.info("\(url.lastPathComponent, privacy: .public): \(withText)/\(indices.count) páginas com texto → \(kind.rawValue, privacy: .public), idioma \(language ?? "?", privacy: .public)")
+        return PDFAnalysis(kind: kind, pageCount: count, sampledPages: indices.count, pagesWithText: withText,
+                           language: language)
     }
 
     /// Amostra espalhada pelo livro (ignora capa quando possível).

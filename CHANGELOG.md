@@ -15,12 +15,27 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
   Os Ajustes mostram se o app está instalado e onde baixar.
 - Liga/desliga separado para o app e para o e-mail (SMTP). Com os dois
   ligados, o app tem prioridade e o e-mail entra quando o app não está instalado.
+- **Idioma do livro.** O app detecta o idioma pelo texto do PDF (ou pelo texto
+  do OCR, nos escaneados) e grava no EPUB. O Kindle usa esse idioma para o
+  dicionário, a hifenização e a leitura em voz alta. Na revisão de título e
+  autor, um menu *Idioma* permite trocar.
+- O idioma escolhido também vai para a frente da lista do OCR, que dá
+  prioridade a ele.
+- `--language` no `--process`, para testar o idioma escolhido pela linha de
+  comando.
 
 ### Alterado
 
 - A aba de Ajustes "Kindle e e-mail" virou "Envio". Os campos de SMTP só
   aparecem com o e-mail ligado, e servidor e porta ficam em linhas separadas.
 - Quem já tinha um remetente configurado continua com o e-mail ligado.
+- Os detalhes de cada livro na fila mostram o idioma detectado (ex.:
+  "PDF com texto · 220 páginas · inglês").
+
+### Corrigido
+
+- Todo EPUB saía marcado como português (`--language pt` fixo no Calibre e
+  `dc:language` fixo no Modo imagem), mesmo com o livro em inglês.
 
 ## [1.0.0] - 2026-11-08
 

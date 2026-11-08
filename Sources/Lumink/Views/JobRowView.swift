@@ -135,4 +135,8 @@ enum Format {
     static func bytes(_ n: Int64) -> String {
         ByteCountFormatter.string(fromByteCount: n, countStyle: .file)
     }
+
+    static func pages(_ n: Int) -> String {
+        n == 1 ? "1 página" : "\(n) páginas"
+    }
 }

@@ -4,6 +4,7 @@ import SwiftUI
 /// Modos de linha de comando para teste/depuração (o app normal ignora isto).
 ///
 ///   Lumink --process livro.pdf [outro.pdf] [--image-mode] [--vision] [--send] [--limit-mb N] [--cancel-after s]
+///           [--language pt|en|…]   (idioma do livro, como na revisão; sem ele, detecta sozinho)
 ///           [--via app|email] [--smtp host:porta --from a@b --to c@kindle.com --password x]
 ///   Lumink --keychain-test   grava, lê e apaga uma senha de teste no Keychain [--level high|medium|maximum]
 ///       Roda o pipeline no terminal e imprime o progresso. Sem --send, só gera o EPUB.
@@ -83,10 +84,11 @@ enum DebugCommands {
             }
             let imageMode = args.contains("--image-mode")
             let cancelAfter = value("--cancel-after").flatMap(Double.init)
+            let language = value("--language")
             Task { @MainActor in
                 var failures = 0
                 for file in files {
-                    if await !process(file, config: config, imageMode: imageMode, cancelAfter: cancelAfter) { failures += 1 }
+                    if await !process(file, config: config, imageMode: imageMode, language: language, cancelAfter: cancelAfter) { failures += 1 }
                 }
                 exit(failures == 0 ? 0 : 1)
             }
@@ -94,9 +96,11 @@ enum DebugCommands {
         }
     }
 
-    private static func process(_ url: URL, config: PipelineConfig, imageMode: Bool, cancelAfter: Double?) async -> Bool {
+    private static func process(_ url: URL, config: PipelineConfig, imageMode: Bool, language: String?,
+                                cancelAfter: Double?) async -> Bool {
         let meta = PDFAnalyzer.metadata(for: url)
         let job = BookJob(sourceURL: url, title: meta.title, author: meta.author, imageMode: imageMode)
+        job.language = language
         job.status = .running
         print("▶︎ \(url.lastPathComponent) (\(Format.bytes(job.originalSize))) título=\"\(meta.title)\" autor=\"\(meta.author)\"")
 
