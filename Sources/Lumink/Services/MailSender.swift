@@ -15,7 +15,7 @@ struct MailSender: Sendable {
         var errorDescription: String? {
             switch self {
             case .notConfigured(let what):
-                "E-mail não configurado: \(what). Abra Configurações (⌘,) → Kindle e e-mail."
+                "E-mail não configurado: \(what). Abra Configurações (⌘,) → Envio."
             case .curl(let code, let detail):
                 "\(Self.explain(code)) (curl \(code))\n\(detail.suffix(400))"
             }

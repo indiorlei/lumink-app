@@ -66,7 +66,15 @@ struct BookPipeline: Sendable {
 
         // 4. Compressão (com fallback de nível se passar do limite de anexo)
         await reporter.stage(.compressing)
-        let limit: Int64? = config.limitOverrideBytes ?? (config.onlyGenerate ? nil : config.effectiveLimitBytes)
+        // A forma de envio define o limite de tamanho. Se nenhuma servir, o EPUB
+        // ainda é gerado e salvo; o erro só aparece na etapa de envio.
+        let delivery: Result<Delivery, Error>? = config.onlyGenerate ? nil : Result { try resolveDelivery() }
+        let limit: Int64? = config.limitOverrideBytes ?? delivery.map {
+            switch $0 {
+            case .success(.app): SendToKindleApp.limitBytes
+            case .success(.email), .failure: config.effectiveLimitBytes
+            }
+        }
         var level = config.compression
         var final: URL
         var finalSize: Int64
@@ -98,23 +106,40 @@ struct BookPipeline: Sendable {
         if let limit, finalSize > limit {
             throw PipelineError.tooLarge(size: finalSize, limit: limit)
         }
-        if config.onlyGenerate {
-            return "EPUB salvo em \(output.lastPathComponent)\(levelNote)"
-        }
-
         // 5. Envio
+        guard let delivery else { return "EPUB salvo em \(output.lastPathComponent)\(levelNote)" }
         await reporter.stage(.sending)
-        let sender = try MailSender.configured(config.smtp, passwordOverride: config.passwordOverride)
-        let message = MailComposer.build(
-            from: config.smtp.sender, to: config.smtp.kindle, subject: meta.title,
-            body: "Enviado pelo Lumink: \(meta.title)\(meta.author.isEmpty ? "" : " — \(meta.author)")",
-            attachment: .init(filename: OutputLocation.sanitize(meta.title) + ".epub", mimeType: "application/epub+zip",
-                              data: try Data(contentsOf: output))
-        )
-        let messageFile = workspace.file("mensagem.eml")
-        try message.write(to: messageFile)
-        try await sender.send(messageFile: messageFile) { reporter.progress($0, in: .sending) }
-        return "Enviado para \(config.smtp.kindle)\(levelNote)"
+        switch try delivery.get() {
+        case .app(let app):
+            try await SendToKindleApp.open(output, with: app)
+            reporter.progress(1, in: .sending)
+            return "Aberto no Send to Kindle: confirme o envio na janela do app\(levelNote)"
+        case .email(let sender):
+            let message = MailComposer.build(
+                from: config.smtp.sender, to: config.smtp.kindle, subject: meta.title,
+                body: "Enviado pelo Lumink: \(meta.title)\(meta.author.isEmpty ? "" : " — \(meta.author)")",
+                attachment: .init(filename: OutputLocation.sanitize(meta.title) + ".epub", mimeType: "application/epub+zip",
+                                  data: try Data(contentsOf: output))
+            )
+            let messageFile = workspace.file("mensagem.eml")
+            try message.write(to: messageFile)
+            try await sender.send(messageFile: messageFile) { reporter.progress($0, in: .sending) }
+            return "Enviado para \(config.smtp.kindle)\(levelNote)"
+        }
+    }
+
+    enum Delivery {
+        case app(URL)
+        case email(MailSender)
+    }
+
+    /// App oficial, se ligado e instalado; senão o e-mail, se ligado e configurado.
+    func resolveDelivery() throws -> Delivery {
+        if config.useSendToKindleApp, let app = SendToKindleApp.locate() { return .app(app) }
+        if config.useEmail {
+            return .email(try MailSender.configured(config.smtp, passwordOverride: config.passwordOverride))
+        }
+        throw config.useSendToKindleApp ? PipelineError.sendToKindleMissing : PipelineError.noDelivery
     }
 
     static func fileSize(_ url: URL) -> Int64 {
@@ -126,6 +151,8 @@ struct BookPipeline: Sendable {
 enum PipelineError: LocalizedError {
     case calibreMissing
     case tooLarge(size: Int64, limit: Int64)
+    case sendToKindleMissing
+    case noDelivery
 
     var errorDescription: String? {
         switch self {
@@ -133,6 +160,10 @@ enum PipelineError: LocalizedError {
             "Calibre não encontrado. Instale em calibre-ebook.com (ou `brew install --cask calibre`) e confira o caminho em Configurações → Conversão. PDFs de HQ/mangá funcionam sem ele no Modo imagem."
         case .tooLarge(let size, let limit):
             "O EPUB ficou com \(Format.bytes(size)) mesmo na compressão máxima (limite: \(Format.bytes(limit))). Ele foi salvo, mas não foi enviado."
+        case .sendToKindleMissing:
+            "App Send to Kindle não encontrado. O EPUB foi salvo; baixe o app em \(SendToKindleApp.downloadURL.absoluteString) ou ligue o envio por e-mail em Configurações (⌘,)."
+        case .noDelivery:
+            "Nenhuma forma de envio ligada. O EPUB foi salvo; ligue o app Send to Kindle ou o e-mail em Configurações (⌘,)."
         }
     }
 }

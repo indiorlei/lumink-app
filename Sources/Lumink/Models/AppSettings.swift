@@ -15,6 +15,8 @@ enum SettingsKey {
     static let reviewBeforeProcessing = "reviewBeforeProcessing"
     static let imageModeDefault = "imageModeDefault"
     static let maxAttachmentMB = "maxAttachmentMB"
+    static let useSendToKindleApp = "useSendToKindleApp"
+    static let useEmail = "useEmail"
 }
 
 enum SettingsDefault {
@@ -27,7 +29,13 @@ enum SettingsDefault {
     static let maxAttachmentMB = 50
 
     static func register() {
-        UserDefaults.standard.register(defaults: [
+        let d = UserDefaults.standard
+        // Quem já tinha configurado o SMTP antes desta opção existir continua com o e-mail ligado.
+        if d.object(forKey: SettingsKey.useEmail) == nil,
+           !(d.string(forKey: SettingsKey.senderEmail) ?? "").isEmpty {
+            d.set(true, forKey: SettingsKey.useEmail)
+        }
+        d.register(defaults: [
             SettingsKey.calibrePath: calibrePath,
             SettingsKey.ocrmypdfPath: ocrmypdfPath,
             SettingsKey.ocrLanguages: ocrLanguages,
@@ -38,6 +46,8 @@ enum SettingsDefault {
             SettingsKey.reviewBeforeProcessing: true,
             SettingsKey.imageModeDefault: false,
             SettingsKey.maxAttachmentMB: maxAttachmentMB,
+            SettingsKey.useSendToKindleApp: true,
+            SettingsKey.useEmail: false,
         ])
     }
 }
@@ -49,6 +59,8 @@ struct PipelineConfig: Sendable {
     var ocrLanguages: String
     var compression: CompressionLevel
     var onlyGenerate: Bool
+    var useSendToKindleApp: Bool
+    var useEmail: Bool
     var smtp: SMTPConfig
     var maxAttachmentBytes: Int64
     /// Só para testes (`--vision`): ignora o ocrmypdf.
@@ -67,6 +79,8 @@ struct PipelineConfig: Sendable {
             ocrLanguages: d.string(forKey: SettingsKey.ocrLanguages) ?? SettingsDefault.ocrLanguages,
             compression: CompressionLevel(rawValue: d.string(forKey: SettingsKey.compressionLevel) ?? "") ?? .medium,
             onlyGenerate: d.bool(forKey: SettingsKey.onlyGenerate),
+            useSendToKindleApp: d.bool(forKey: SettingsKey.useSendToKindleApp),
+            useEmail: d.bool(forKey: SettingsKey.useEmail),
             smtp: SMTPConfig.current(),
             maxAttachmentBytes: Int64(max(1, d.integer(forKey: SettingsKey.maxAttachmentMB))) * 1_000_000
         )
