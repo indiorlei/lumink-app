@@ -2,6 +2,9 @@
 # Compila o Lumink e monta build/Lumink.app.
 # Uso: ./build-app.sh [debug|release]   (padrão: release)
 #
+# Release gera um binário universal (Apple Silicon + Intel); debug compila só
+# para a arquitetura desta máquina. Para forçar: KP_ARCHS="arm64" ./build-app.sh
+#
 # Usa o `swiftc` diretamente (só precisa das Command Line Tools). Se você tiver
 # o Xcode, também pode abrir o Package.swift nele.
 set -euo pipefail
@@ -9,23 +12,25 @@ cd "$(dirname "$0")"
 
 CONFIG="${1:-release}"
 APP="build/Lumink.app"
-ARCH="$(uname -m)"
 OPT=(-O)
-[[ "$CONFIG" == "debug" ]] && OPT=(-Onone -g)
+ARCHS=(arm64 x86_64)
+if [[ "$CONFIG" == "debug" ]]; then OPT=(-Onone -g); ARCHS=("$(uname -m)"); fi
+[[ -n "${KP_ARCHS:-}" ]] && read -r -a ARCHS <<< "$KP_ARCHS"
 
-echo "▸ Compilando ($CONFIG, $ARCH)…"
+echo "▸ Compilando ($CONFIG, ${ARCHS[*]})…"
 mkdir -p build
 SOURCES=()
 while IFS= read -r -d '' f; do SOURCES+=("$f"); done < <(find Sources/Lumink -name '*.swift' -print0)
+# compile <sdk> <arch>: gera build/Lumink-<arch>
 compile() {
     swiftc "${OPT[@]}" \
         -parse-as-library \
         -module-name Lumink \
         -swift-version 5 \
-        -target "$ARCH-apple-macos14.0" \
+        -target "$2-apple-macos14.0" \
         -sdk "$1" \
         "${SOURCES[@]}" \
-        -o build/Lumink
+        -o "build/Lumink-$2"
 }
 
 # SDK: $KP_SDK, senão o padrão do sistema. Em algumas instalações só das Command
@@ -39,9 +44,10 @@ while IFS= read -r sdk; do CANDIDATES+=("$sdk"); done < <(ls -d "$SDK_DIR"/MacOS
 
 BUILT=0
 LOG="build/compile.log"
+SDK=""
 for sdk in "${CANDIDATES[@]}"; do
-    if compile "$sdk" 2>"$LOG"; then
-        echo "  SDK: $sdk"; BUILT=1; break
+    if compile "$sdk" "${ARCHS[0]}" 2>"$LOG"; then
+        echo "  SDK: $sdk"; SDK="$sdk"; BUILT=1; break
     fi
     if ! grep -qE "SwiftUIMacros|not supported by the compiler|redefinition of module" "$LOG"; then
         cat "$LOG"; exit 1          # erro de código de verdade: não adianta trocar de SDK
@@ -50,6 +56,15 @@ for sdk in "${CANDIDATES[@]}"; do
 done
 if [[ $BUILT == 0 ]]; then cat "$LOG"; echo "✗ Nenhum SDK compatível."; exit 1; fi
 grep -E "warning:" "$LOG" | head -20 || true
+
+# As outras arquiteturas usam o mesmo SDK; depois o lipo junta tudo num binário só.
+for arch in "${ARCHS[@]:1}"; do
+    echo "  Compilando ${arch}…"
+    compile "$SDK" "$arch" 2>"$LOG" || { cat "$LOG"; exit 1; }
+done
+lipo -create "${ARCHS[@]/#/build/Lumink-}" -output build/Lumink
+rm -f "${ARCHS[@]/#/build/Lumink-}"
+echo "  Arquiteturas: $(lipo -archs build/Lumink)"
 
 echo "▸ Montando ${APP}…"
 rm -rf "$APP"
