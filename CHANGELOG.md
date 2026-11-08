@@ -8,6 +8,8 @@ o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
 ## [Não lançado]
 
+## [1.1.0] - 2026-11-08
+
 ### Adicionado
 
 - Envio pelo app oficial **Send to Kindle** da Amazon, ligado por padrão: o
@@ -134,4 +136,6 @@ livro em PDF, converte para EPUB, comprime e envia para o Kindle.
 - O OCR do Vision é bem mais lento que o do ocrmypdf.
 - O envio exige configurar o SMTP e uma senha de app.
 
-[1.0.0]: https://github.com/SEU-USUARIO/lumink/releases/tag/v1.0.0
+[Não lançado]: https://github.com/indiorlei/lumink-app/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/indiorlei/lumink-app/compare/v1.0.0...v1.1.0
+[1.0.0]: https://github.com/indiorlei/lumink-app/releases/tag/v1.0.0

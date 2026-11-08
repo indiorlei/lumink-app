@@ -19,6 +19,31 @@ struct ReleaseNote: Identifiable, Sendable {
 enum ReleaseNotes {
     static let all: [ReleaseNote] = [
         ReleaseNote(
+            version: "1.1",
+            date: loc("8 de novembro de 2026", "November 8, 2026"),
+            headline: loc("Envio sem senha e o Lumink em inglês", "Password-free delivery, and Lumink in English"),
+            sections: [
+                .init(title: loc("Envio pelo app da Amazon", "Delivery through Amazon's app"), items: [
+                    loc("O Lumink agora abre o EPUB no app oficial *Send to Kindle* da Amazon, e você confirma o envio por lá. O login fica com a Amazon: nenhuma senha passa pelo Lumink.",
+                        "Lumink now opens the EPUB in Amazon's official *Send to Kindle* app, and you confirm the delivery there. The login stays with Amazon: no password goes through Lumink."),
+                    loc("O e-mail continua disponível em Configurações → Envio. Com os dois ligados, o app tem prioridade e o e-mail entra quando o app não está instalado.",
+                        "Email is still available in Settings → Delivery. With both on, the app comes first and email takes over when the app isn't installed."),
+                ]),
+                .init(title: loc("O idioma certo no Kindle", "The right language on your Kindle"), items: [
+                    loc("O Lumink detecta o idioma do livro e grava no EPUB. O Kindle usa esse idioma para o dicionário, a hifenização e a leitura em voz alta.",
+                        "Lumink detects the book's language and writes it into the EPUB. The Kindle uses it for the dictionary, hyphenation and text-to-speech."),
+                    loc("Antes, todo livro saía marcado como português, mesmo em inglês.",
+                        "Before, every book was tagged as Portuguese, even English ones."),
+                    loc("Na revisão de título e autor, o menu *Idioma* deixa você trocar.",
+                        "In the title and author review, the *Language* menu lets you change it."),
+                ]),
+                .init(title: loc("Lumink em inglês", "Lumink in English"), items: [
+                    loc("O app segue o idioma do macOS: português ou inglês. Para escolher só para o Lumink: Ajustes do Sistema → Geral → Idioma e Região → Aplicativos.",
+                        "The app follows your macOS language: English or Portuguese. To pick one just for Lumink: System Settings → General → Language & Region → Applications."),
+                ]),
+            ]
+        ),
+        ReleaseNote(
             version: "1.0",
             date: loc("8 de novembro de 2026", "November 8, 2026"),
             headline: loc("Primeira versão", "First release"),
