@@ -1,0 +1,130 @@
+import SwiftUI
+
+struct SettingsView: View {
+    var body: some View {
+        TabView {
+            MailSettingsView()
+                .tabItem { Label("Kindle e e-mail", systemImage: "envelope") }
+            ConversionSettingsView()
+                .tabItem { Label("Conversão", systemImage: "doc.badge.gearshape") }
+        }
+        .frame(width: 540)
+        .padding()
+    }
+}
+
+private struct MailSettingsView: View {
+    @AppStorage(SettingsKey.kindleEmail) private var kindleEmail = ""
+    @AppStorage(SettingsKey.senderEmail) private var senderEmail = ""
+    @AppStorage(SettingsKey.smtpHost) private var smtpHost = SettingsDefault.smtpHost
+    @AppStorage(SettingsKey.smtpPort) private var smtpPort = SettingsDefault.smtpPort
+    @AppStorage(SettingsKey.onlyGenerate) private var onlyGenerate = false
+    @AppStorage(SettingsKey.maxAttachmentMB) private var maxAttachmentMB = SettingsDefault.maxAttachmentMB
+    @State private var model = SettingsViewModel()
+
+    var body: some View {
+        Form {
+            Section("Kindle") {
+                TextField("E-mail do Kindle", text: $kindleEmail, prompt: Text("nome_123@kindle.com"))
+                if !kindleEmail.isEmpty && !kindleEmail.lowercased().hasSuffix("@kindle.com") {
+                    Text("O endereço do Send to Kindle costuma terminar em @kindle.com.")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+                Toggle("Só gerar o EPUB, sem enviar", isOn: $onlyGenerate)
+            }
+            Section("Remetente (SMTP)") {
+                TextField("E-mail remetente", text: $senderEmail, prompt: Text("voce@gmail.com"))
+                    .onChange(of: senderEmail) { _, new in model.loadPassword(for: new) }
+                HStack {
+                    TextField("Servidor", text: $smtpHost)
+                    TextField("Porta", value: $smtpPort, format: .number.grouping(.never))
+                        .frame(width: 70)
+                }
+                HStack {
+                    SecureField("Senha de app", text: $model.password)
+                    Button("Salvar no Keychain") { model.savePassword(for: senderEmail) }
+                        .disabled(senderEmail.isEmpty)
+                }
+                if model.passwordSaved {
+                    Label("Senha guardada no Keychain", systemImage: "lock.fill")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Text("Porta 465 usa SSL direto (smtps). Outras portas (ex.: 587) usam STARTTLS. Lembre de adicionar o remetente à lista de e-mails aprovados na Amazon.")
+                    .font(.caption).foregroundStyle(.secondary)
+                if SMTPConfig(host: smtpHost, port: smtpPort, sender: "", kindle: "").providerAttachmentLimitBytes != nil {
+                    Text("O Gmail recusa mensagens acima de 25 MB; o app limita o anexo a ~18 MB automaticamente.")
+                        .font(.caption).foregroundStyle(.orange)
+                }
+                Stepper("Limite do anexo: \(maxAttachmentMB) MB", value: $maxAttachmentMB, in: 5...50)
+            }
+            Section {
+                Text("O teste envia um e-mail sem anexo para o próprio remetente: valida servidor, porta e senha sem gastar um documento no Kindle.")
+                    .font(.caption).foregroundStyle(.secondary)
+                HStack {
+                    Button("Enviar e-mail de teste") { model.sendTestEmail() }
+                        .disabled(model.testState == .sending || senderEmail.isEmpty)
+                    switch model.testState {
+                    case .idle: EmptyView()
+                    case .sending: ProgressView().controlSize(.small)
+                    case .ok: Text("✅ Enviado").font(.callout)
+                    case .failed(let msg):
+                        Text("❌ \(msg)").font(.caption).foregroundStyle(.red)
+                            .textSelection(.enabled).lineLimit(6)
+                    }
+                }
+            }
+        }
+        .formStyle(.grouped)
+        .onAppear { model.loadPassword(for: senderEmail) }
+    }
+}
+
+private struct ConversionSettingsView: View {
+    @AppStorage(SettingsKey.calibrePath) private var calibrePath = SettingsDefault.calibrePath
+    @AppStorage(SettingsKey.ocrmypdfPath) private var ocrmypdfPath = SettingsDefault.ocrmypdfPath
+    @AppStorage(SettingsKey.ocrLanguages) private var ocrLanguages = SettingsDefault.ocrLanguages
+    @AppStorage(SettingsKey.compressionLevel) private var compression = SettingsDefault.compressionLevel
+    @AppStorage(SettingsKey.reviewBeforeProcessing) private var review = true
+    @AppStorage(SettingsKey.imageModeDefault) private var imageModeDefault = false
+
+    var body: some View {
+        Form {
+            Section("Ferramentas") {
+                LabeledContent("ebook-convert") {
+                    PathField(path: $calibrePath, found: DependencyChecker.findCalibre(configured: calibrePath))
+                }
+                LabeledContent("ocrmypdf") {
+                    PathField(path: $ocrmypdfPath, placeholder: "automático (Homebrew)",
+                              found: DependencyChecker.findOCRmyPDF(configured: ocrmypdfPath))
+                }
+                TextField("Idiomas do OCR", text: $ocrLanguages, prompt: Text("por+eng"))
+            }
+            Section("Padrões") {
+                Picker("Qualidade", selection: $compression) {
+                    ForEach(CompressionLevel.allCases) { level in
+                        Text("\(level.label) (\(level.detail))").tag(level.rawValue)
+                    }
+                }
+                Toggle("Revisar título e autor antes de processar", isOn: $review)
+                Toggle("Modo imagem (HQ/mangá) por padrão", isOn: $imageModeDefault)
+            }
+        }
+        .formStyle(.grouped)
+    }
+}
+
+private struct PathField: View {
+    @Binding var path: String
+    var placeholder: String = ""
+    let found: String?
+
+    var body: some View {
+        VStack(alignment: .trailing, spacing: 2) {
+            TextField("", text: $path, prompt: Text(placeholder))
+                .font(.caption.monospaced())
+            Text(found.map { "✓ \($0)" } ?? "não encontrado")
+                .font(.caption2)
+                .foregroundStyle(found == nil ? .red : .secondary)
+        }
+    }
+}
