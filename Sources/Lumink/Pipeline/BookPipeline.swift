@@ -1,0 +1,138 @@
+import Foundation
+
+/// Orquestra as etapas de um job. Roda fora do MainActor.
+struct BookPipeline: Sendable {
+    let config: PipelineConfig
+
+    /// Retorna a mensagem de sucesso, ou lança erro.
+    func run(_ job: BookJob, reporter: JobReporter) async throws -> String {
+        let source = await MainActor.run { job.sourceURL }
+        let workspace = try TempWorkspace()
+        defer { workspace.cleanup() }
+
+        // 1. Análise
+        await reporter.stage(.analyzing)
+        let analysis = try PDFAnalyzer.analyze(source)
+        await reporter.detail("\(analysis.kind.label) · \(analysis.pageCount) páginas")
+        try Task.checkCancellation()
+
+        var meta = await reporter.snapshot()
+        var baseDetail = "\(analysis.kind.label) · \(analysis.pageCount) páginas"
+
+        // 2. OCR (escaneado ou misto, fora do modo imagem)
+        var pdfForConversion = source
+        if !meta.imageMode && analysis.kind != .text {
+            await reporter.stage(.ocr)
+            let ocrDetail = baseDetail
+            let outcome = try await OCRService(config: config).run(
+                pdf: source, workDir: workspace.url,
+                detail: { await reporter.detail("\(ocrDetail) · OCR: \($0)") },
+                progress: { reporter.progress($0, in: .ocr) }
+            )
+            pdfForConversion = outcome.pdf
+            await reporter.detail("\(baseDetail) · OCR: \(outcome.engine)")
+            // Quase nada reconhecido (HQ, mangá, fotos): o reflow daria um livro vazio.
+            if outcome.ocrPages > 0 && outcome.recognizedChars / outcome.ocrPages < 100 && analysis.kind == .scanned {
+                Log.ocr.info("Pouco texto reconhecido; mudando para o modo imagem")
+                meta.imageMode = true
+                await MainActor.run { job.imageMode = true }
+                baseDetail += " · pouco texto → Modo imagem"
+                await reporter.detail(baseDetail)
+            }
+            try Task.checkCancellation()
+        } else if meta.imageMode {
+            baseDetail += " · Modo imagem"
+            await reporter.detail(baseDetail)
+        }
+
+        // 3. Conversão
+        await reporter.stage(.converting)
+        let epub = workspace.file("convertido.epub")
+        if meta.imageMode {
+            try await ImageModeConverter().convert(
+                pdf: source, to: epub, workDir: workspace.url,
+                options: .init(title: meta.title, author: meta.author)
+            ) { reporter.progress($0, in: .converting) }
+        } else {
+            guard let calibre = DependencyChecker.findCalibre(configured: config.calibrePath) else {
+                throw PipelineError.calibreMissing
+            }
+            try await CalibreConverter(executable: calibre).convert(
+                pdf: pdfForConversion, to: epub,
+                options: .init(title: meta.title, author: meta.author)
+            ) { reporter.progress($0, in: .converting) }
+        }
+        try Task.checkCancellation()
+
+        // 4. Compressão (com fallback de nível se passar do limite de anexo)
+        await reporter.stage(.compressing)
+        let limit: Int64? = config.limitOverrideBytes ?? (config.onlyGenerate ? nil : config.effectiveLimitBytes)
+        var level = config.compression
+        var final: URL
+        var finalSize: Int64
+        while true {
+            await reporter.detail("\(baseDetail) · \(level.label)")
+            final = workspace.file("final-\(level.rawValue).epub")
+            _ = try await EPUBCompressor().compress(epub, to: final, level: level, workDir: workspace.url) {
+                reporter.progress($0, in: .compressing)
+            }
+            finalSize = Self.fileSize(final)
+            Log.compress.info("Tamanho com \(level.rawValue, privacy: .public): \(finalSize)")
+            guard let limit, finalSize > limit, let next = level.next else { break }
+            Log.compress.info("Acima do limite (\(limit)); tentando \(next.rawValue, privacy: .public)")
+            level = next
+            await reporter.stage(.compressing)
+        }
+        try Task.checkCancellation()
+
+        // Salva em ~/Documents/Lumink
+        let output = try OutputLocation.uniqueURL(forTitle: meta.title)
+        try FileManager.default.moveItem(at: final, to: output)
+        let savedSize = finalSize
+        await MainActor.run {
+            job.outputURL = output
+            job.finalSize = savedSize
+        }
+        let levelNote = level == config.compression ? "" : " (compressão aumentada para \(level.label))"
+
+        if let limit, finalSize > limit {
+            throw PipelineError.tooLarge(size: finalSize, limit: limit)
+        }
+        if config.onlyGenerate {
+            return "EPUB salvo em \(output.lastPathComponent)\(levelNote)"
+        }
+
+        // 5. Envio
+        await reporter.stage(.sending)
+        let sender = try MailSender.configured(config.smtp, passwordOverride: config.passwordOverride)
+        let message = MailComposer.build(
+            from: config.smtp.sender, to: config.smtp.kindle, subject: meta.title,
+            body: "Enviado pelo Lumink: \(meta.title)\(meta.author.isEmpty ? "" : " — \(meta.author)")",
+            attachment: .init(filename: OutputLocation.sanitize(meta.title) + ".epub", mimeType: "application/epub+zip",
+                              data: try Data(contentsOf: output))
+        )
+        let messageFile = workspace.file("mensagem.eml")
+        try message.write(to: messageFile)
+        try await sender.send(messageFile: messageFile) { reporter.progress($0, in: .sending) }
+        return "Enviado para \(config.smtp.kindle)\(levelNote)"
+    }
+
+    static func fileSize(_ url: URL) -> Int64 {
+        let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
+        return (attrs?[.size] as? NSNumber)?.int64Value ?? 0
+    }
+}
+
+enum PipelineError: LocalizedError {
+    case calibreMissing
+    case tooLarge(size: Int64, limit: Int64)
+
+    var errorDescription: String? {
+        switch self {
+        case .calibreMissing:
+            "Calibre não encontrado. Instale em calibre-ebook.com (ou `brew install --cask calibre`) e confira o caminho em Configurações → Conversão. PDFs de HQ/mangá funcionam sem ele no Modo imagem."
+        case .tooLarge(let size, let limit):
+            "O EPUB ficou com \(Format.bytes(size)) mesmo na compressão máxima (limite: \(Format.bytes(limit))). Ele foi salvo, mas não foi enviado."
+        }
+    }
+}
