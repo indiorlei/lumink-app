@@ -35,11 +35,8 @@ private struct MailSettingsView: View {
             Section("Remetente (SMTP)") {
                 TextField("E-mail remetente", text: $senderEmail, prompt: Text("voce@gmail.com"))
                     .onChange(of: senderEmail) { _, new in model.loadPassword(for: new) }
-                HStack {
-                    TextField("Servidor", text: $smtpHost)
-                    TextField("Porta", value: $smtpPort, format: .number.grouping(.never))
-                        .frame(width: 70)
-                }
+                TextField("Servidor", text: $smtpHost, prompt: Text("smtp.gmail.com"))
+                TextField("Porta", value: $smtpPort, format: .number.grouping(.never), prompt: Text("465"))
                 HStack {
                     SecureField("Senha de app", text: $model.password)
                     Button("Salvar no Keychain") { model.savePassword(for: senderEmail) }
