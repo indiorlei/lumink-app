@@ -64,7 +64,22 @@ Xcode. O `build-app.sh` contorna os dois problemas e escolhe automaticamente um
 SDK compatível. Para consertar as CLT:
 `sudo rm -rf /Library/Developer/CommandLineTools && xcode-select --install`.
 
-## 3. Configurar o envio (⌘, → "Kindle e e-mail")
+## 3. Configurar o envio (⌘, → "Envio")
+
+São duas opções, cada uma com seu liga/desliga. Com as duas ligadas, o Lumink
+usa o app quando ele está instalado e o e-mail nos outros casos.
+
+### App Send to Kindle (recomendado, padrão)
+
+Instale o app oficial da Amazon para Mac em <https://www.amazon.com/sendtokindle>
+e entre com a sua conta Amazon nele. No fim do processamento, o Lumink abre o
+EPUB no Send to Kindle, e você escolhe o dispositivo e confirma o envio lá. Não
+precisa de senha, servidor nem lista de remetentes aprovados, e o limite é de
+200 MB.
+
+### E-mail (Gmail ou outro SMTP)
+
+Envia sozinho, sem abrir outro app. Ligue *E-mail* e preencha:
 
 1. **E-mail do Kindle**: em amazon.com.br → *Gerenciar conteúdo e dispositivos* →
    *Preferências* → *Configurações de documentos pessoais*. Termina em `@kindle.com`.
@@ -83,7 +98,7 @@ UserDefaults ou em arquivo. Como cada build tem uma assinatura ad-hoc nova, o
 macOS pode perguntar uma vez se o Lumink pode acessar a senha. Clique em
 *Permitir sempre*.
 
-**Limite de tamanho:** o Send to Kindle aceita até 50 MB, mas o **Gmail recusa
+**Limite de tamanho (e-mail):** o Send to Kindle por e-mail aceita até 50 MB, mas o **Gmail recusa
 mensagens acima de 25 MB**. Com a codificação base64 (+33%), sobram ~18 MB de
 anexo. Quando o servidor é o Gmail, o app usa 18 MB como limite automaticamente.
 

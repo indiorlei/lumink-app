@@ -6,6 +6,22 @@ As novidades para quem usa o app aparecem também dentro dele, em
 O formato segue o [Keep a Changelog](https://keepachangelog.com/pt-BR/1.1.0/) e
 o projeto usa [versionamento semântico](https://semver.org/lang/pt-BR/).
 
+## [Não lançado]
+
+### Adicionado
+
+- Envio pelo app oficial **Send to Kindle** da Amazon, ligado por padrão: o
+  Lumink abre o EPUB no app e o login fica com a Amazon, sem senha no Lumink.
+  Os Ajustes mostram se o app está instalado e onde baixar.
+- Liga/desliga separado para o app e para o e-mail (SMTP). Com os dois
+  ligados, o app tem prioridade e o e-mail entra quando o app não está instalado.
+
+### Alterado
+
+- A aba de Ajustes "Kindle e e-mail" virou "Envio". Os campos de SMTP só
+  aparecem com o e-mail ligado, e servidor e porta ficam em linhas separadas.
+- Quem já tinha um remetente configurado continua com o e-mail ligado.
+
 ## [1.0.0] - 2026-11-08
 
 Primeira versão. App nativo para macOS 14+ (Swift + SwiftUI) que recebe um
