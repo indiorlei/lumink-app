@@ -134,16 +134,19 @@ enum DebugCommands {
 
     private static func snapshot(to url: URL) {
         let queue = QueueViewModel()
-        let samples: [(String, JobStatus, PipelineStage, Double?, Int64?, String)] = [
-            ("Dom Casmurro.pdf", .pendingReview, .waiting, 0, nil, ""),
-            ("Sapiens - escaneado.pdf", .running, .ocr, nil, nil, "PDF escaneado · 412 páginas"),
-            ("Manual Técnico.pdf", .running, .converting, 0.42, nil, "PDF com texto · 220 páginas"),
-            ("Mangá vol 1.pdf", .succeeded("Enviado para nome@kindle.com"), .finished, 1, 31_400_000, "Modo imagem · Média"),
-            ("Enorme.pdf", .failed("O EPUB ficou com 63 MB mesmo na compressão máxima (limite: 50 MB). Não foi enviado."), .finished, 1, 63_000_000, ""),
+        let samples: [(String, Int64, JobStatus, PipelineStage, Double?, Int64?, String)] = [
+            ("Dom Casmurro.pdf", 2_300_000, .pendingReview, .waiting, 0, nil, ""),
+            ("Sapiens - escaneado.pdf", 184_000_000, .running, .ocr, nil, nil, "PDF escaneado · 412 páginas"),
+            ("Manual Técnico.pdf", 36_500_000, .running, .converting, 0.42, nil, "PDF com texto · 220 páginas"),
+            ("Mangá vol 1.pdf", 212_000_000, .succeeded("Aberto no Send to Kindle: confirme o envio na janela do app"),
+             .finished, 1, 31_400_000, "Modo imagem · Média"),
+            ("O Alienista.pdf", 8_700_000, .succeeded("Enviado para nome@kindle.com"),
+             .finished, 1, 1_200_000, "PDF com texto · 96 páginas · Média"),
         ]
-        for (name, status, stage, progress, final, detail) in samples {
+        for (name, size, status, stage, progress, final, detail) in samples {
             let job = BookJob(sourceURL: URL(fileURLWithPath: "/tmp/\(name)"),
-                              title: (name as NSString).deletingPathExtension, author: "Autor Exemplo", imageMode: false)
+                              title: (name as NSString).deletingPathExtension, author: "Autor Exemplo",
+                              imageMode: false, originalSize: size)
             job.status = status
             job.stage = stage
             job.progress = progress

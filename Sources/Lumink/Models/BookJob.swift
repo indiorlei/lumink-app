@@ -21,13 +21,14 @@ final class BookJob: Identifiable {
     var finalSize: Int64?
     var outputURL: URL?
 
-    init(sourceURL: URL, title: String, author: String, imageMode: Bool) {
+    /// `originalSize` só é passado em prévias (`--snapshot`), onde o arquivo não existe.
+    init(sourceURL: URL, title: String, author: String, imageMode: Bool, originalSize: Int64? = nil) {
         self.sourceURL = sourceURL
         self.title = title
         self.author = author
         self.imageMode = imageMode
         let attrs = try? FileManager.default.attributesOfItem(atPath: sourceURL.path)
-        self.originalSize = (attrs?[.size] as? NSNumber)?.int64Value ?? 0
+        self.originalSize = originalSize ?? (attrs?[.size] as? NSNumber)?.int64Value ?? 0
     }
 
     var fileName: String { sourceURL.lastPathComponent }
